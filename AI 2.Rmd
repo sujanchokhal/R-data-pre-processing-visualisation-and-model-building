@@ -1,0 +1,158 @@
+---
+title: "AI.rmd"
+output: word_document
+date: "2023-09-04"
+---
+#SUJAN
+
+
+
+
+
+
+```{r}
+#loading data
+library(readr)
+cleaned_articles <-read.csv("/Users/sujanchokhal/Desktop/cleaned_articles.csv")
+```
+
+
+```{r}
+# Load necessary packages
+library(topicmodels)
+library(tidytext)
+library(ggplot2)
+library(dplyr)
+
+```
+
+
+```{r}
+# Create a Document-Term Matrix (DTM) from your dataset
+cleaned_articles_dtm <- cleaned_articles %>%
+  unnest_tokens(word, Article) %>%
+  count(Date, word) %>%
+  cast_dtm(Date, word, n)
+```
+
+
+```{r}
+# Set a seed for reproducibility
+set.seed(1234)
+```
+
+```{r}
+
+library(reshape2)
+```
+
+
+```{r}
+# Extract the topic-term distribution
+topics <- tidy(lda_model, matrix = "beta")
+```
+
+```{r}
+ # Load a list of common stop words
+ stop_words <- tidytext::stop_words
+
+# Filter out stop words
+topics <- topics %>%
+    filter(!term %in% stop_words$word)
+
+```
+
+
+```{r}
+# Find the top terms for each topic
+top_terms <- topics %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+```
+
+
+
+
+
+```{r}
+# Reorder terms within each topic
+top_terms <- top_terms %>%
+  mutate(term = reorder_within(term, beta, topic))
+```
+
+```{r}
+# Create a ggplot visualization
+ggplot(top_terms, aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered() +
+  labs(x = "Beta Value", y = "Term")
+```
+```{r}
+library(tidyr)
+
+beta_wide <- topics %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+
+```
+
+```{r}
+library(ggplot2)
+
+# Sort the terms by absolute log ratio for both topics
+sorted_terms <- beta_wide %>%
+  arrange(topic1, desc(abs(log_ratio)))
+
+# Create a new column to specify the color based on the sign of the log ratio
+sorted_terms <- sorted_terms %>%
+  mutate(log_color = ifelse(log_ratio > 0, "blue", "red"))
+
+# Select the top 10 terms for each color (red and blue)
+top_terms <- sorted_terms %>%
+  group_by(log_color) %>%
+  slice_head(n = 10) %>%
+  ungroup()
+```
+
+```{r}
+#
+beta_wide
+```
+
+
+
+
+```{r}
+# Create a bar chart to visualize the top 20 log ratios (10 red and 10 blue)
+ggplot(top_terms, aes(x = reorder(term, log_ratio), y = log_ratio, fill = log_color)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("red" = "red", "blue" = "blue"), guide = FALSE) +
+  labs(x = "Term", y = "Log Ratio", title = "Top 20 Log Ratios of Terms Between Topics 1 and 2 (10 red, 10 blue)") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8))
+
+```
+
+
+
+
+```{r}
+#model evaluation 
+# Calculate the log-likelihood of the model on the data frame 'cleaned_articles_dtm'
+log_likelihood <- logLik(lda_model, cleaned_articles_dtm)
+
+# Calculate the perplexity
+ perplexity <- exp(-log_likelihood / sum(cleaned_articles_dtm))
+
+ # Print the perplexity score
+cat("Perplexity:", perplexity, "\n")
+```
+
+
+
