@@ -16,7 +16,7 @@ R program language has been using of open-source environment for data analysis. 
 
 Data description
 
-This dataset is taken from (ASADMAHMOOD, 2017) Kaggle. This data has news articles related to business and sports. It has included the place of article published. It has 4 column which are Articles, Data, Heading and News Type.
+This dataset is taken from (ASADMAHMOOD, 2017) Kaggle (https://www.kaggle.com/datasets/asad1m9a9h6mood/news-articles9. This data has news articles related to business and sports. It has included the place of article published. It has 4 column which are Articles, Data, Heading and News Type.
 Article: Text having the news article and the place where it was published from
 Heading: Text containing the heading of the news article.
 Date: Date when the article was published.
